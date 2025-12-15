@@ -47,7 +47,7 @@ class DemoParser:
         
         deaths = self._extract_deaths(deaths_df, ticks_df, player_name)
         kills = self._extract_kills(deaths_df, ticks_df, player_name)
-        flashes = self._extract_flashes(blind_df, deaths_df, player_name)
+        flashes = self._extract_flashes(blind_df, deaths_df, ticks_df, player_name)
         
         return {
             "deaths": deaths,
@@ -56,7 +56,7 @@ class DemoParser:
         }
     
     def _extract_deaths(self, deaths_df, ticks_df, player_name: str) -> List[Dict]:
-        """Extract death events for player"""
+        """Extract death events for player (with angles for crosshair analysis)"""
         if deaths_df is None or deaths_df.empty:
             return []
         
@@ -69,6 +69,7 @@ class DemoParser:
             # Get player position at death
             tick_data = ticks_df[ticks_df['tick'] == tick]
             player_data = tick_data[tick_data['name'] == player_name]
+            angles = self._get_angles(player_data)
             
             death_info = {
                 "tick": int(tick),
@@ -77,6 +78,8 @@ class DemoParser:
                 "weapon": death.get('weapon', 'unknown'),
                 "headshot": bool(death.get('headshot', False)),
                 "position": self._get_position(player_data),
+                "pitch": angles.get('pitch', 0.0),
+                "yaw": angles.get('yaw', 0.0),
                 "attacker_position": self._get_attacker_position(tick_data, death.get('attacker_name')),
                 "teammates_nearby": self._get_nearby_teammates(tick_data, player_data, player_name)
             }
@@ -85,7 +88,7 @@ class DemoParser:
         return deaths
     
     def _extract_kills(self, deaths_df, ticks_df, player_name: str) -> List[Dict]:
-        """Extract kill events for player"""
+        """Extract kill events for player (with angles and victim position)"""
         if deaths_df is None or deaths_df.empty:
             return []
         
@@ -94,24 +97,29 @@ class DemoParser:
         kills = []
         for _, kill in player_kills.iterrows():
             tick = kill.get('tick', 0)
+            victim_name = kill.get('user_name', 'Unknown')
             
             tick_data = ticks_df[ticks_df['tick'] == tick]
             player_data = tick_data[tick_data['name'] == player_name]
+            angles = self._get_angles(player_data)
             
             kill_info = {
                 "tick": int(tick),
                 "attacker": player_name,
-                "victim": kill.get('user_name', 'Unknown'),
+                "victim": victim_name,
                 "weapon": kill.get('weapon', 'unknown'),
                 "headshot": bool(kill.get('headshot', False)),
-                "position": self._get_position(player_data)
+                "position": self._get_position(player_data),
+                "pitch": angles.get('pitch', 0.0),
+                "yaw": angles.get('yaw', 0.0),
+                "victim_position": self._get_attacker_position(tick_data, victim_name)
             }
             kills.append(kill_info)
         
         return kills
     
-    def _extract_flashes(self, blind_df, deaths_df, player_name: str) -> List[Dict]:
-        """Extract flash events thrown by player"""
+    def _extract_flashes(self, blind_df, deaths_df, ticks_df, player_name: str) -> List[Dict]:
+        """Extract flash events thrown by player (with pop-flash detection)"""
         flashes = []
         
         if blind_df is None or blind_df.empty:
@@ -130,7 +138,8 @@ class DemoParser:
                 "victim": flash.get('user_name', 'Unknown'),
                 "blind_duration": float(blind_duration),
                 "effective": blind_duration > 1.0,  # Flash > 1 second is considered effective
-                "followed_by_kill": self._check_kill_after_flash(deaths_df, player_name, tick)
+                "followed_by_kill": self._check_kill_after_flash(deaths_df, player_name, tick),
+                "pop_flash": self._check_player_movement_after(ticks_df, player_name, tick, 64)  # peek within 1s
             }
             flashes.append(flash_info)
         
@@ -146,6 +155,17 @@ class DemoParser:
             "x": float(row.get('X', 0)),
             "y": float(row.get('Y', 0)),
             "z": float(row.get('Z', 0))
+        }
+    
+    def _get_angles(self, player_data) -> Dict[str, float]:
+        """Get player view angles from tick data"""
+        if player_data.empty:
+            return {"pitch": 0.0, "yaw": 0.0}
+        
+        row = player_data.iloc[0]
+        return {
+            "pitch": float(row.get('pitch', 0)),
+            "yaw": float(row.get('yaw', 0))
         }
     
     def _get_attacker_position(self, tick_data, attacker_name: str) -> Dict[str, float]:
@@ -206,6 +226,20 @@ class DemoParser:
         ]
         
         return len(kills_after) > 0
+    
+    def _check_player_movement_after(self, ticks_df, player_name: str, start_tick: int, window_ticks: int) -> bool:
+        """Check if player moved significantly after tick (for pop flash detection)"""
+        start_data = ticks_df[(ticks_df['tick'] == start_tick) & (ticks_df['name'] == player_name)]
+        end_data = ticks_df[(ticks_df['tick'] == start_tick + window_ticks) & (ticks_df['name'] == player_name)]
+        
+        if start_data.empty or end_data.empty:
+            return False
+        
+        start_pos = self._get_position(start_data)
+        end_pos = self._get_position(end_data)
+        
+        distance = self._calculate_distance(start_pos, end_pos)
+        return distance > 100  # Moved more than 100 units = likely peeked
     
     def save_events(self, events: Dict, output_path: str):
         """Save extracted events to JSON file"""
