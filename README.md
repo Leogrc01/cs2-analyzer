@@ -1,243 +1,193 @@
-# CS2 Gap Analyzer 🎮
+# 🎮 CS2 Gap Analyzer
 
-Analyseur de démos CS2 pour identifier tes axes d'amélioration et devenir pro.
+Outil d'analyse avancée pour démos Counter-Strike 2. Identifie automatiquement les axes d'amélioration de votre gameplay à travers l'analyse de crosshair placement, économie, positionnement et utility usage.
 
-## 🎯 Objectif
+![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
+![CS2](https://img.shields.io/badge/CS2-Compatible-green.svg)
 
-Après chaque game, obtenir un rapport ultra-précis qui te dit :
-- **🎯 Crosshair Placement** : Mesure exacte de l'angle entre ton crosshair et l'ennemi (flicks requis)
-- **💀 Morts évitables** : Analyse avec facteurs de risque réels (no teammate, no utility)
-- **💪 Duels désavantagés** : Détection précise des duels pris sans avantage
-- **💥 Flashes utiles** : Effectiveness réelle + pop-flash detection
-- **📊 Top 3 priorités** : Classées par severity avec recommandations actionnables
+## ✨ Fonctionnalités
 
-Analyse géométrique avancée. Rapports détaillés. Maximum d'impact.
+### 📊 Analyse Complète
+- **Crosshair Placement** : Mesure précise des angles de flick nécessaires
+- **Analyse Économique** : Tracking des pertes d'équipement et discipline eco
+- **Positionnement** : Identification des zones dangereuses vs zones performantes
+- **Utility Usage** : Efficacité des flashes, détection de pop-flashes
+- **Recommandations Prioritaires** : Top 3 des axes d'amélioration par sévérité
+
+### 🗺️ Heatmap Visuelle
+- Visualisation graphique des positions de mort et kill
+- Support d'overlay sur images radar réelles
+- Détection automatique des zones dangereuses (K/D < 0.7)
+- Identification des zones fortes (K/D ≥ 1.5)
+- Calibration automatique des coordonnées
+
+### 🎯 Métriques Avancées
+- K/D par zone de map
+- Analyse de morts évitables
+- ROI économique par round type
+- Pop-flash detection via movement tracking
+- Données 100% précises (utilise `current_equip_value` du jeu)
 
 ## 🚀 Installation
 
-### 1. Installer Python 3.12 et tkinter
-```bash
-brew install python@3.12
-brew install python-tk@3.12
-```
+### Prérequis
+- Python 3.12+ (ou 3.10+)
+- CS2 demo files (.dem)
 
-### 2. Créer un environnement virtuel
+### Setup Rapide
 ```bash
+# Cloner le repo
+git clone https://github.com/YOUR_USERNAME/cs2-gap-analyzer.git
+cd cs2-gap-analyzer
+
+# Créer l'environnement virtuel
 python3.12 -m venv venv
-```
 
-### 3. Activer l'environnement
-```bash
-source venv/bin/activate
-```
+# Installer les dépendances
+venv/bin/pip install -r requirements.txt
 
-### 4. Installer les dépendances
-```bash
-pip install -r requirements.txt
+# Lancer le menu interactif
+./run.sh
 ```
-
-**Note** : Tu dois activer l'environnement virtuel (`source venv/bin/activate`) chaque fois que tu veux utiliser l'outil.
 
 ## 📖 Utilisation
 
-### Récupérer tes démos CS2
-
-1. Dans CS2, va dans **Watch > Your Matches**
-2. Télécharge la démo de ta dernière game
-3. Place-la dans le dossier `demos/` (ou note son chemin)
-
-### Analyser une démo
-
+### Mode Interactif (Recommandé) ⭐
 ```bash
-# Active l'environnement virtuel si pas déjà fait
-source venv/bin/activate
-
-# Lance l'analyse
-python main.py demos/match.dem "TonPseudoCS2"
+./run.sh
 ```
 
-**⚠️ Important** : Le pseudo doit correspondre EXACTEMENT à ton nom in-game (sensible à la casse).
+Menu guidé avec toutes les options :
+- 📊 Analyse complète (rapport + heatmap)
+- 📝 Rapport textuel uniquement
+- 🗺️ Heatmap uniquement
+- 📍 Vue détaillée positionnement
+- 🔧 Calibration des coordonnées
 
-### Exemple de sortie
+### Mode Ligne de Commande
+```bash
+# Analyse complète
+venv/bin/python main.py demos/match.dem "PlayerName" --save
+
+# Heatmap avec overlay
+venv/bin/python generate_heatmap_overlay.py demos/match.dem "PlayerName"
+```
+
+## 📊 Exemple de Rapport
 
 ```
-======================================================================
-   CS2 GAP ANALYZER - RAPPORT D'ANALYSE
-   Joueur: TonPseudo
+🎮 CS2 GAP ANALYZER - RAPPORT D'ANALYSE
 ======================================================================
 
 📊 VUE D'ENSEMBLE
-----------------------------------------------------------------------
-K/D Ratio            : 0.75  (15 kills / 20 deaths)
-Headshot Rate        : 42.0%
-Crosshair Placement  : 65% mauvais (avg offset: 45°)
-Morts évitables      : 55%
-Duels désavantagés   : 45%
-Flashes utiles       : 40% (15% pop flashes)
+K/D Ratio            : 0.67  (10 kills / 15 deaths)
+Headshot Rate        : 40.0%
+Crosshair Placement  : 27% mauvais (avg offset: 27°)
+Impact économique    : 55550$ perdus (avg: 3703$/mort)
+Morts coûteuses      : 67% (>3000$)
 
-🎯 PRIORITÉS D'AMÉLIORATION (par ordre d'importance)
-----------------------------------------------------------------------
+🎯 PRIORITÉS D'AMÉLIORATION
+1. ⚡ POP FLASH
+   Seulement 4% de pop flashes
+   → Apprendre les pop flashes de chaque map
 
-1. 🎯 CROSSHAIR PLACEMENT
-   65% des duels avec mauvais pre-aim (>30°)
-   → Travailler le pre-aim sur angles communs (DM focus)
+2. 💰 DISCIPLINE ÉCONOMIQUE
+   67% des morts perdent >3000$
+   → Préserver équipement cher, jouer plus safe en full buy
 
-2. ⚠️ MORTS ÉVITABLES
-   55% des morts étaient évitables
-   → Jouer avec équipe, utiliser utility avant de peek
+🗺️ ANALYSE DE POSITIONNEMENT
+Map: de_dust2
 
-3. 💪 DUELS DÉSAVANTAGÉS
-   45% des duels pris sans avantage
-   → Créer avantage avant de peek (flash + jiggle peek)
+Zones les plus dangereuses:
+  • Long: 7 morts (K/D 0.57)
+  • Long Doors: 2 morts (K/D 0.00)
 
-🎯 DÉTAILS CROSSHAIR PLACEMENT
-----------------------------------------------------------------------
-Offset moyen         : 45.3° (objectif: <20°)
-Mauvais placement    : 13/20 duels (>30° flick requis)
+Zones performantes:
+  • A Site: K/D 3.00 (3K/1D)
 
-Pires exemples (>60° flick requis):
-  • Vs PlayerX: 87° off target
-  • Vs PlayerY: 72° off target
-  • Vs PlayerZ: 65° off target
-
-💀 ANALYSE DES MORTS
-----------------------------------------------------------------------
-Morts évitables      : 11/20
-Sans avantage        : 9/20
-
-Facteurs de risque principaux:
-  • Aucun coéquipier pour trade : 8
-  • Aucune utility utilisée     : 11
-
-💥 UTILISATION DES UTILITAIRES
-----------------------------------------------------------------------
-Total flashes        : 8
-Flashes utiles       : 3 (38%)
-Pop flashes          : 1 (13%)
-
-Efficacité:
-  • Ennemis flashés (>1s)      : 2
-  • Kill dans les 3s après     : 2
-
-======================================================================
-💡 TIP: Focus sur 1-2 points à la fois pour amélioration maximale
-======================================================================
+Recommandations:
+  🔴 ÉVITER Long - Jouer plus safe ou éviter cette zone
+  ✅ EXPLOITER A Site - Zone forte, jouer plus souvent ici
 ```
 
-### Sauvegarder les résultats
+## 🗺️ Heatmap avec Overlay
 
-Pour garder une trace des analyses (JSON + rapport texte) :
+![Heatmap Example](docs/heatmap_example.png)
 
-```bash
-python main.py demos/match.dem "TonPseudoCS2" --save
-```
+Pour de meilleurs résultats, ajoutez des images radar :
+1. Télécharger depuis [SimpleRadar](https://readtldr.gg/simpleradar)
+2. Placer dans `maps/de_dust2.png`
+3. L'overlay sera automatiquement appliqué
 
-Les fichiers seront créés dans le dossier `output/`.
-
-## 📊 Métriques expliquées
-
-### 🎯 Crosshair Placement (NOUVEAU !)
-Mesure l'angle entre la direction de ton crosshair et la position de l'ennemi au moment où tu meurs :
-- **Bon** : <30° (pre-aim correct)
-- **Mauvais** : 30-60° (flick moyen requis)
-- **Terrible** : >60° (gros flick requis)
-
-Objectif : Avg offset <20° et <30% de mauvais placement.
-
-### 💀 Morts évitables (AMÉLIORÉ)
-Une mort est "évitable" si tu as des facteurs de risque ET aucun avantage :
-- **Facteurs de risque** : No teammate pour trade, no utility utilisée
-- **Avantages** : Flash active, teammates nearby, close range (<500 units)
-
-### 💪 Duels désavantagés
-Duel pris sans aucun avantage parmi :
-- Flash active sur ennemi
-- Supériorité numérique
-- Close range ou angle advantage
-- Teammate pour trade
-
-### 💥 Flashes utiles (AMÉLIORÉ)
-Flash "utile" si :
-- Aveugle ennemi >1 seconde, OU
-- Kill dans les 3s après
-
-**Pop-flash** : Flash suivie d'un peek dans la seconde (mouvement >100 units)
-
-## 🛠 Architecture
-
-```
-CS2 Demo (.dem)
-      ↓
-Parser (demoparser2) + Geometry
-      ↓
-Events JSON (deaths, kills, flashes + angles pitch/yaw)
-      ↓
-Analyzer (analyses précises avec calculs géométriques)
-      ↓
-Report (rapport détaillé et actionnable)
-```
-
-### Fichiers principaux
-
-- `main.py` - Point d'entrée CLI
-- `src/parser.py` - Extraction des events avec angles
-- `src/geometry.py` - Calculs FOV, crosshair offset, line of sight
-- `src/game_state.py` - Tracking d'état (smokes, visible enemies, HP)
-- `src/analyzer.py` - Analyses avancées avec métriques précises
-- `src/report.py` - Génération de rapports détaillés avec priorités
-
-## 🔧 Structure du projet
+## 🏗️ Architecture
 
 ```
 cs2-gap-analyzer/
-├── main.py              # Script principal
-├── requirements.txt     # Dépendances
-├── README.md           # Ce fichier
+├── analyzer.py                  # 🚀 Menu interactif principal
+├── run.sh                       # 🚀 Launch script
+├── main.py                      # CLI analysis tool
 ├── src/
-│   ├── parser.py       # Parser de démos
-│   ├── analyzer.py     # Analyseur de gameplay
-│   └── report.py       # Générateur de rapports
-├── demos/              # Tes fichiers .dem (à créer)
-├── output/             # Rapports générés
-└── tests/              # Tests (à venir)
+│   ├── parser.py               # Demo parsing (demoparser2)
+│   ├── analyzer.py             # Core analysis engine
+│   ├── economy.py              # Economic analysis
+│   ├── positioning.py          # Zone-based performance
+│   ├── geometry.py             # FOV, crosshair calculations
+│   └── report.py               # Report generation
+├── demos/                       # 📂 Place .dem files here
+├── maps/                        # 🗺️ Radar images (optional)
+└── output/                      # 📊 Generated reports
 ```
 
-## 💡 Conseils d'utilisation
+## 📚 Documentation
 
-1. **Analyse après chaque game** - Plus tu analyses, plus tu progresses vite
-2. **Focus sur UNE priorité à la fois** - Ne cherche pas à tout corriger d'un coup
-3. **Track ton évolution** - Utilise `--save` et compare tes stats sur plusieurs games
-4. **Vérifie ton pseudo** - Si l'outil ne trouve rien, c'est probablement une erreur de pseudo
+- **[QUICKSTART.md](QUICKSTART.md)** - Guide de démarrage rapide
+- **[HEATMAP_GUIDE.md](HEATMAP_GUIDE.md)** - Documentation heatmaps
+- **[WARP.md](WARP.md)** - Documentation technique complète
 
-## 🐛 Problèmes courants
+## 🔬 Détails Techniques
 
-### "Demo file not found"
-- Vérifie que le fichier .dem existe
-- Utilise le chemin complet si nécessaire
+### Crosshair Placement
+Mesure l'angle entre crosshair et position ennemie :
+- Good : <30° | Bad : 30-60° | Terrible : >60°
 
-### "Player not found in demo"
-- Vérifie l'orthographe exacte de ton pseudo in-game
-- Le nom est sensible à la casse
+### Analyse Économique
+- Utilise `current_equip_value` du jeu (100% précis)
+- Inclut ALL equipment: armes, armor, helmet, kit, grenades
+- Catégorisation auto : pistol/eco/force/full buy
 
-### "demoparser2 not installed"
-- Lance : `pip install -r requirements.txt`
+### Positionnement
+- Coordonnées précises pour dust2, mirage, inferno
+- Détection auto danger zones (K/D < 0.7)
+- Strong zones (K/D ≥ 1.5)
 
-## 🚀 Features récentes
+## 🤝 Contribution
 
-- [x] **Crosshair Placement Analysis** - Mesure précise des angles de flick
-- [x] **Geometric Calculations** - FOV, line of sight, crosshair offset
-- [x] **Pop-flash Detection** - Tracking de mouvement après flash
-- [x] **Priority System** - Top 3 ranked par severity
-- [x] **Detailed Reports** - Breakdown complet avec exemples
+Contributions bienvenues ! 
+- Issues pour bugs/suggestions
+- PR pour nouvelles features
+- Ajout de coordonnées pour nouvelles maps
 
-## 🔮 Roadmap
+## 📝 Roadmap
 
-- [ ] Tests unitaires
-- [ ] GameState integration (visible enemies at death)
-- [ ] Statistiques par map et side (T/CT)
-- [ ] Économie et buy analysis
-- [ ] Comparaison entre games (progression tracking)
+- [ ] Support maps: Nuke, Anubis, Vertigo, Ancient
+- [ ] Analyse multi-joueur
+- [ ] Timeline événements
+- [ ] Tilt pattern detection
+- [ ] Export HTML interactif
+- [ ] Movement analysis
 
-## 📝 Licence
+## 🙏 Remerciements
 
-MIT - Fais-en ce que tu veux pour devenir pro !
+- **demoparser2** - CS2 demo parsing
+- **matplotlib** - Visualisation
+- **SimpleRadar** - Images radar
+
+## 📄 License
+
+MIT License
+
+---
+
+⭐ **Tip** : Utilisez après chaque session pour tracker votre progression !
+
+💡 **Discord** : [Rejoindre pour support et discussions](https://discord.gg/YOUR_LINK)

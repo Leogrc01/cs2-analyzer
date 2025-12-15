@@ -8,6 +8,8 @@ from src.geometry import (
     line_of_sight_clear,
     calculate_distance
 )
+from src.economy import EconomyAnalyzer
+from src.positioning import PositioningAnalyzer
 
 
 class GapAnalyzer:
@@ -17,6 +19,7 @@ class GapAnalyzer:
         self.deaths = events.get("deaths", [])
         self.kills = events.get("kills", [])
         self.flashes = events.get("flashes", [])
+        self.map_name = events.get("map_name", "unknown")
         
         # Thresholds for analysis
         self.CROSSHAIR_BAD_THRESHOLD = 30.0  # degrees
@@ -37,6 +40,15 @@ class GapAnalyzer:
         deaths_analysis = self.analyze_deaths_advanced()
         kills_analysis = self.analyze_kills_advanced()
         flash_analysis = self.analyze_flash_effectiveness_advanced()
+        
+        # Economic analysis
+        economy_analyzer = EconomyAnalyzer(self.deaths, self.kills)
+        economy_analysis = economy_analyzer.analyze()
+        
+        # Positioning analysis
+        positioning_analyzer = PositioningAnalyzer(self.deaths, self.kills, self.map_name)
+        positioning_analysis = positioning_analyzer.analyze()
+        positioning_recommendations = positioning_analyzer.generate_recommendations(positioning_analysis)
         
         # Calculate key percentages
         total_deaths = len(self.deaths)
@@ -72,7 +84,8 @@ class GapAnalyzer:
             no_advantage_pct,
             flash_useful_pct,
             pop_flash_pct,
-            hsr
+            hsr,
+            economy_analysis['summary']['expensive_death_pct']
         )
         
         return {
@@ -87,12 +100,18 @@ class GapAnalyzer:
                 "flash_useful_pct": round(flash_useful_pct, 1),
                 "pop_flash_pct": round(pop_flash_pct, 1),
                 "avg_crosshair_offset": round(crosshair_analysis['avg_offset'], 1),
-                "total_flashes": total_flashes
+                "total_flashes": total_flashes,
+                "total_value_lost": economy_analysis['summary']['total_value_lost'],
+                "avg_death_cost": economy_analysis['summary']['avg_death_cost'],
+                "expensive_deaths_pct": economy_analysis['summary']['expensive_death_pct']
             },
             "crosshair": crosshair_analysis,
             "deaths": deaths_analysis,
             "kills": kills_analysis,
             "flashes": flash_analysis,
+            "economy": economy_analysis,
+            "positioning": positioning_analysis,
+            "positioning_recommendations": positioning_recommendations,
             "priorities": priorities
         }
     
@@ -284,7 +303,8 @@ class GapAnalyzer:
                             no_advantage_pct: float,
                             flash_useful_pct: float,
                             pop_flash_pct: float,
-                            hsr: float) -> List[Tuple[str, str, str]]:
+                            hsr: float,
+                            expensive_deaths_pct: float = 0) -> List[Tuple[str, str, str]]:
         """
         Determine training priorities based on all metrics
         
@@ -345,6 +365,15 @@ class GapAnalyzer:
                 "🎮 HEADSHOT RATE",
                 f"HSR à {hsr:.0f}% (objectif: 40%+)",
                 "Deathmatch avec focus tête uniquement"
+            ))
+        
+        # Economic discipline
+        if expensive_deaths_pct > 50:
+            issues.append((
+                expensive_deaths_pct * 0.8,  # Weight it a bit lower
+                "💰 DISCIPLINE ÉCONOMIQUE",
+                f"{expensive_deaths_pct:.0f}% des morts perdent >3000$",
+                "Préserver équipement cher, jouer plus safe en full buy"
             ))
         
         # Sort by severity and return top 3

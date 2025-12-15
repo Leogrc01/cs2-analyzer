@@ -17,6 +17,9 @@ class ReportGenerator:
         self.deaths = analysis.get("deaths", [])
         self.kills = analysis.get("kills", [])
         self.flashes = analysis.get("flashes", [])
+        self.economy = analysis.get("economy", {})
+        self.positioning = analysis.get("positioning", {})
+        self.positioning_recommendations = analysis.get("positioning_recommendations", [])
     
     def generate_console_report(self) -> str:
         """
@@ -52,6 +55,12 @@ class ReportGenerator:
         lines.extend(self._generate_utility_details())
         lines.append("")
         
+        lines.extend(self._generate_economy_details())
+        lines.append("")
+        
+        lines.extend(self._generate_positioning_details())
+        lines.append("")
+        
         # Footer
         lines.append("=" * 70)
         lines.append("💡 TIP: Focus sur 1-2 points à la fois pour amélioration maximale")
@@ -77,6 +86,8 @@ class ReportGenerator:
         lines.append(f"Morts évitables      : {self.summary['avoidable_deaths_pct']:.0f}%")
         lines.append(f"Duels désavantagés   : {self.summary['no_advantage_duels_pct']:.0f}%")
         lines.append(f"Flashes utiles       : {self.summary['flash_useful_pct']:.0f}% ({self.summary['pop_flash_pct']:.0f}% pop flashes)")
+        lines.append(f"Impact économique    : {self.summary['total_value_lost']}$ perdus (avg: {self.summary['avg_death_cost']:.0f}$/mort)")
+        lines.append(f"Morts coûteuses      : {self.summary['expensive_deaths_pct']:.0f}% (>3000$)")
         
         return lines
     
@@ -171,6 +182,116 @@ class ReportGenerator:
         lines.append(f"\nEfficacité:")
         lines.append(f"  • Ennemis flashés (>1s)      : {hit_enemy}")
         lines.append(f"  • Kill dans les 3s après     : {followed_kill}")
+        
+        return lines
+    
+    def _generate_economy_details(self) -> List[str]:
+        """Generate detailed economic analysis"""
+        lines = []
+        lines.append("💰 ANALYSE ÉCONOMIQUE")
+        lines.append("-" * 70)
+        
+        if not self.economy:
+            lines.append("Pas de données économiques")
+            return lines
+        
+        eco_summary = self.economy.get('summary', {})
+        eco_discipline = self.economy.get('eco_discipline', {})
+        round_types = self.economy.get('round_types', {})
+        
+        # Overall stats
+        total_lost = eco_summary.get('total_value_lost', 0)
+        avg_cost = eco_summary.get('avg_death_cost', 0)
+        expensive_deaths = eco_summary.get('expensive_deaths', 0)
+        
+        lines.append(f"Valeur totale perdue : {total_lost}$")
+        lines.append(f"Coût moyen par mort  : {avg_cost:.0f}$")
+        lines.append(f"Morts coûteuses      : {expensive_deaths} (>3000$)")
+        
+        # Eco discipline
+        high_value_deaths = eco_discipline.get('high_value_deaths', 0)
+        rifle_deaths = eco_discipline.get('rifle_deaths', 0)
+        awp_deaths = eco_discipline.get('awp_deaths', 0)
+        
+        lines.append(f"\nDiscipline économique:")
+        lines.append(f"  • Morts avec équipement cher (>3500$): {high_value_deaths}")
+        lines.append(f"  • Morts avec rifle               : {rifle_deaths}")
+        lines.append(f"  • Morts avec AWP                 : {awp_deaths}")
+        
+        # Worst losses
+        worst = eco_discipline.get('worst_losses', [])
+        if worst:
+            lines.append(f"\nPires pertes économiques:")
+            for loss in worst[:3]:
+                weapon = loss['weapon']
+                value = loss['total_value']
+                attacker = loss['attacker']
+                lines.append(f"  • {value}$ ({weapon}) vs {attacker}")
+        
+        # Round type breakdown
+        if round_types:
+            lines.append(f"\nPerformance par type de round:")
+            for buy_type, stats in round_types.items():
+                deaths = stats.get('deaths', 0)
+                avg_lost = stats.get('avg_value_lost', 0)
+                if deaths > 0:
+                    buy_label = {
+                        'full_buy': 'Full Buy',
+                        'force_buy': 'Force Buy',
+                        'eco': 'Eco',
+                        'pistol': 'Pistol'
+                    }.get(buy_type, buy_type)
+                    lines.append(f"  • {buy_label:12s}: {deaths} morts (avg {avg_lost:.0f}$/mort)")
+        
+        return lines
+    
+    def _generate_positioning_details(self) -> List[str]:
+        """Generate detailed positioning analysis"""
+        lines = []
+        lines.append("🗺️  ANALYSE DE POSITIONNEMENT")
+        lines.append("-" * 70)
+        
+        if not self.positioning:
+            lines.append("Pas de données de positionnement")
+            return lines
+        
+        map_name = self.positioning.get('map_name', 'unknown')
+        death_zones = self.positioning.get('death_zones', {})
+        kill_zones = self.positioning.get('kill_zones', {})
+        zone_performance = self.positioning.get('zone_performance', {})
+        danger_zones = self.positioning.get('danger_zones', [])
+        strong_zones = self.positioning.get('strong_zones', [])
+        
+        lines.append(f"Map: {map_name}")
+        lines.append("")
+        
+        # Most dangerous zones
+        most_dangerous = death_zones.get('most_dangerous', [])
+        if most_dangerous:
+            lines.append("Zones les plus dangereuses:")
+            for zone_name, data in most_dangerous[:3]:
+                count = data['count']
+                perf = zone_performance.get(zone_name, {})
+                kd = perf.get('kd_ratio', 0)
+                lines.append(f"  • {zone_name}: {count} morts (K/D {kd:.2f})")
+            lines.append("")
+        
+        # Strong zones
+        if strong_zones:
+            lines.append("Zones performantes:")
+            for zone_info in strong_zones[:3]:
+                zone = zone_info['zone']
+                kd = zone_info['kd_ratio']
+                kills = zone_info['kills']
+                deaths = zone_info['deaths']
+                lines.append(f"  • {zone}: K/D {kd:.2f} ({kills}K/{deaths}D)")
+            lines.append("")
+        
+        # Recommendations
+        if self.positioning_recommendations:
+            lines.append("Recommandations:")
+            for rec in self.positioning_recommendations:
+                lines.append(f"  {rec}")
         
         return lines
     

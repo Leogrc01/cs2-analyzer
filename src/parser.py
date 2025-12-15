@@ -22,16 +22,25 @@ class DemoParser:
             player_name: Name of the player to analyze
             
         Returns:
-            Dictionary with 'deaths', 'kills', and 'flashes' lists
+            Dictionary with 'deaths', 'kills', 'flashes', and 'map_name'
         """
         try:
             from demoparser2 import DemoParser as DP
         except ImportError:
-            raise ImportError(
-                "demoparser2 not installed. Run: pip install demoparser2"
-            )
+            import subprocess
+            import sys
+
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "demoparser2"])
+            from demoparser2 import DemoParser as DP
         
         parser = DP(str(self.demo_path))
+        
+        # Extract map name from header
+        try:
+            header = parser.parse_header()
+            map_name = header.get('map_name', 'unknown') if isinstance(header, dict) else 'unknown'
+        except:
+            map_name = 'unknown'
         
         # Extract player death events
         deaths_df = parser.parse_event("player_death")
@@ -42,8 +51,11 @@ class DemoParser:
         except:
             blind_df = None
         
-        # Extract player positions and info
-        ticks_df = parser.parse_ticks(["X", "Y", "Z", "pitch", "yaw", "health", "team_name"])
+        # Extract player positions and info (including inventory)
+        ticks_df = parser.parse_ticks([
+            "X", "Y", "Z", "pitch", "yaw", "health", "team_name",
+            "armor_value", "has_helmet", "has_defuser", "inventory", "current_equip_value"
+        ])
         
         deaths = self._extract_deaths(deaths_df, ticks_df, player_name)
         kills = self._extract_kills(deaths_df, ticks_df, player_name)
@@ -52,7 +64,8 @@ class DemoParser:
         return {
             "deaths": deaths,
             "kills": kills,
-            "flashes": flashes
+            "flashes": flashes,
+            "map_name": map_name
         }
     
     def _extract_deaths(self, deaths_df, ticks_df, player_name: str) -> List[Dict]:
@@ -71,6 +84,9 @@ class DemoParser:
             player_data = tick_data[tick_data['name'] == player_name]
             angles = self._get_angles(player_data)
             
+            # Get inventory data
+            inventory = self._get_inventory(player_data)
+            
             death_info = {
                 "tick": int(tick),
                 "victim": player_name,
@@ -81,7 +97,12 @@ class DemoParser:
                 "pitch": angles.get('pitch', 0.0),
                 "yaw": angles.get('yaw', 0.0),
                 "attacker_position": self._get_attacker_position(tick_data, death.get('attacker_name')),
-                "teammates_nearby": self._get_nearby_teammates(tick_data, player_data, player_name)
+                "teammates_nearby": self._get_nearby_teammates(tick_data, player_data, player_name),
+                "armor_value": inventory.get('armor_value', 0),
+                "has_helmet": inventory.get('has_helmet', False),
+                "has_defuser": inventory.get('has_defuser', False),
+                "inventory": inventory.get('inventory', []),
+                "equip_value": inventory.get('equip_value', 0)
             }
             deaths.append(death_info)
         
@@ -166,6 +187,39 @@ class DemoParser:
         return {
             "pitch": float(row.get('pitch', 0)),
             "yaw": float(row.get('yaw', 0))
+        }
+    
+    def _get_inventory(self, player_data) -> Dict[str, Any]:
+        """Get player inventory and equipment from tick data"""
+        if player_data.empty:
+            return {
+                "armor_value": 0,
+                "has_helmet": False,
+                "has_defuser": False,
+                "inventory": []
+            }
+        
+        row = player_data.iloc[0]
+        
+        # Parse inventory list (weapons, grenades, etc.)
+        inventory_raw = row.get('inventory', [])
+        inventory_list = []
+        if isinstance(inventory_raw, list):
+            inventory_list = inventory_raw
+        elif isinstance(inventory_raw, str):
+            # Sometimes inventory is a string, try to parse it
+            try:
+                import ast
+                inventory_list = ast.literal_eval(inventory_raw)
+            except:
+                inventory_list = []
+        
+        return {
+            "armor_value": int(row.get('armor_value', 0)),
+            "has_helmet": bool(row.get('has_helmet', False)),
+            "has_defuser": bool(row.get('has_defuser', False)),
+            "inventory": inventory_list,
+            "equip_value": int(row.get('current_equip_value', 0))
         }
     
     def _get_attacker_position(self, tick_data, attacker_name: str) -> Dict[str, float]:
