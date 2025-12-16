@@ -23,10 +23,11 @@ def print_menu():
     print("  2. 📝 Rapport textuel uniquement")
     print("  3. 🎬 Générer highlights (timestamps + script CS2)")
     print("  4. 📑 Rapport modulaire (section spécifique)")
-    print("  5. 🗺️  Heatmap uniquement")
-    print("  6. 📍 Vue détaillée positionnement")
-    print("  7. 🔧 Calibrer coordonnées map")
-    print("  8. ℹ️  Aide / Documentation")
+    print("  5. 📏 Analyse agrégée (dossier de map)")
+    print("  6. 🗺️  Heatmap uniquement")
+    print("  7. 📍 Vue détaillée positionnement")
+    print("  8. 🔧 Calibrer coordonnées map")
+    print("  9. ℹ️  Aide / Documentation")
     print("  0. ❌ Quitter")
     print("-" * 70)
 
@@ -208,6 +209,65 @@ def run_modular_report(demo_path, player_name):
     os.system(cmd)
 
 
+def run_aggregated_analysis():
+    """Analyze multiple demos from a map folder"""
+    print("\n📏 ANALYSE AGRÉGÉE (DOSSIER DE MAP)")
+    print("=" * 70)
+    print("\nOrganisez vos demos par map:")
+    print("  demos/")
+    print("  ├── dust2/")
+    print("  │   ├── match1.dem")
+    print("  │   ├── match2.dem")
+    print("  │   └── match3.dem")
+    print("  └── mirage/")
+    print("      ├── game1.dem")
+    print("      └── game2.dem")
+    print("=" * 70)
+    
+    # List available folders in demos/
+    demos_root = Path("demos")
+    if demos_root.exists():
+        subfolders = [f for f in demos_root.iterdir() if f.is_dir()]
+        if subfolders:
+            print("\n📂 Dossiers disponibles dans demos/:")
+            for i, folder in enumerate(subfolders, 1):
+                dem_count = len(list(folder.glob("*.dem")))
+                print(f"  {i}. {folder.name}/ ({dem_count} demos)")
+            print(f"  0. Chemin manuel")
+            
+            choice = input("\n➤ Sélectionner un dossier: ").strip()
+            
+            if choice == '0':
+                folder_path = input("📂 Chemin du dossier: ").strip()
+            else:
+                try:
+                    idx = int(choice) - 1
+                    if 0 <= idx < len(subfolders):
+                        folder_path = str(subfolders[idx])
+                    else:
+                        print("❌ Choix invalide")
+                        return
+                except ValueError:
+                    print("❌ Entrée invalide")
+                    return
+        else:
+            folder_path = input("📂 Chemin du dossier de map: ").strip()
+    else:
+        folder_path = input("📂 Chemin du dossier de map: ").strip()
+    
+    if not folder_path or not Path(folder_path).exists():
+        print("❌ Dossier introuvable")
+        return
+    
+    player_name = get_player_name()
+    if not player_name:
+        return
+    
+    print(f"\n📊 Analyse de tous les demos dans {folder_path}...")
+    cmd = f'venv/bin/python analyze_map_folder.py "{folder_path}" "{player_name}" output'
+    os.system(cmd)
+
+
 def show_help():
     """Display help and documentation"""
     print("\n" + "="*70)
@@ -266,11 +326,16 @@ def main():
                 print("\n👋 Au revoir!")
                 break
             
-            elif choice == '8':
+            elif choice == '5':
+                run_aggregated_analysis()
+                input("\n⏎ Appuyez sur Entrée pour continuer...")
+                continue
+            
+            elif choice == '9':
                 show_help()
                 continue
             
-            elif choice in ['1', '2', '3', '4', '5', '6', '7']:
+            elif choice in ['1', '2', '3', '4', '6', '7', '8']:
                 # Select demo file
                 demo_path = select_demo()
                 if not demo_path:
@@ -292,17 +357,17 @@ def main():
                     run_highlights(demo_path, player_name)
                 elif choice == '4':
                     run_modular_report(demo_path, player_name)
-                elif choice == '5':
-                    run_heatmap_only(demo_path, player_name)
                 elif choice == '6':
-                    run_positioning_view(demo_path, player_name)
+                    run_heatmap_only(demo_path, player_name)
                 elif choice == '7':
+                    run_positioning_view(demo_path, player_name)
+                elif choice == '8':
                     run_calibration(demo_path, player_name)
                 
                 input("\n⏎ Appuyez sur Entrée pour continuer...")
             
             else:
-                print("\n❌ Choix invalide. Entrez un numéro de 0 à 8.")
+                print("\n❌ Choix invalide. Entrez un numéro de 0 à 9.")
                 input("\n⏎ Appuyez sur Entrée pour continuer...")
         
         except KeyboardInterrupt:
