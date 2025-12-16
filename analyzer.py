@@ -21,10 +21,12 @@ def print_menu():
     print("-" * 70)
     print("  1. 📊 Analyse complète (rapport + heatmap)")
     print("  2. 📝 Rapport textuel uniquement")
-    print("  3. 🗺️  Heatmap uniquement")
-    print("  4. 📍 Vue détaillée positionnement")
-    print("  5. 🔧 Calibrer coordonnées map")
-    print("  6. ℹ️  Aide / Documentation")
+    print("  3. 🎬 Générer highlights (timestamps + script CS2)")
+    print("  4. 📑 Rapport modulaire (section spécifique)")
+    print("  5. 🗺️  Heatmap uniquement")
+    print("  6. 📍 Vue détaillée positionnement")
+    print("  7. 🔧 Calibrer coordonnées map")
+    print("  8. ℹ️  Aide / Documentation")
     print("  0. ❌ Quitter")
     print("-" * 70)
 
@@ -152,6 +154,60 @@ def run_calibration(demo_path, player_name):
     os.system(cmd)
 
 
+def run_highlights(demo_path, player_name):
+    """Generate highlights with timestamps and CS2 script"""
+    print("\n🎬 Génération des highlights...")
+    cmd = f'venv/bin/python generate_highlights.py "{demo_path}" "{player_name}" output'
+    os.system(cmd)
+    print("\n✅ HIGHLIGHTS GÉNÉRÉS!")
+    print(f"📁 Fichiers disponibles dans output/:")
+    print(f"   • output/*_highlights.txt - Liste des moments clés")
+    print(f"   • output/highlights.cfg - Script CS2 de navigation")
+    print(f"   • output/*_highlights.json - Données JSON")
+    print(f"\n💡 NEXT STEP: Copier highlights.cfg vers:")
+    print(f"   ~/.steam/steam/steamapps/common/Counter-Strike Global Offensive/game/csgo/cfg/")
+
+
+def run_modular_report(demo_path, player_name):
+    """Generate modular report for specific section"""
+    print("\n📑 RAPPORT MODULAIRE")
+    print("=" * 70)
+    print("\nSections disponibles:")
+    print("  1. 📊 Vue d'ensemble")
+    print("  2. 🎯 Crosshair placement")
+    print("  3. 💀 Analyse des morts")
+    print("  4. 💥 Utilisation des utilitaires")
+    print("  5. 💰 Analyse économique")
+    print("  6. 🗺️  Positionnement")
+    print("  7. 🎯 Priorités d'amélioration")
+    print("  0. Annuler")
+    print("=" * 70)
+    
+    section_map = {
+        '1': 'overview',
+        '2': 'crosshair',
+        '3': 'deaths',
+        '4': 'utility',
+        '5': 'economy',
+        '6': 'positioning',
+        '7': 'priorities'
+    }
+    
+    choice = input("\n➤ Choisir une section: ").strip()
+    
+    if choice == '0':
+        return
+    
+    if choice not in section_map:
+        print("❌ Choix invalide")
+        return
+    
+    section = section_map[choice]
+    print(f"\n📝 Génération du rapport {section}...")
+    cmd = f'venv/bin/python generate_modular_report.py "{demo_path}" "{player_name}" {section} output'
+    os.system(cmd)
+
+
 def show_help():
     """Display help and documentation"""
     print("\n" + "="*70)
@@ -210,11 +266,11 @@ def main():
                 print("\n👋 Au revoir!")
                 break
             
-            elif choice == '6':
+            elif choice == '8':
                 show_help()
                 continue
             
-            elif choice in ['1', '2', '3', '4', '5']:
+            elif choice in ['1', '2', '3', '4', '5', '6', '7']:
                 # Select demo file
                 demo_path = select_demo()
                 if not demo_path:
@@ -233,16 +289,20 @@ def main():
                 elif choice == '2':
                     run_report_only(demo_path, player_name)
                 elif choice == '3':
-                    run_heatmap_only(demo_path, player_name)
+                    run_highlights(demo_path, player_name)
                 elif choice == '4':
-                    run_positioning_view(demo_path, player_name)
+                    run_modular_report(demo_path, player_name)
                 elif choice == '5':
+                    run_heatmap_only(demo_path, player_name)
+                elif choice == '6':
+                    run_positioning_view(demo_path, player_name)
+                elif choice == '7':
                     run_calibration(demo_path, player_name)
                 
                 input("\n⏎ Appuyez sur Entrée pour continuer...")
             
             else:
-                print("\n❌ Choix invalide. Entrez un numéro de 0 à 6.")
+                print("\n❌ Choix invalide. Entrez un numéro de 0 à 8.")
                 input("\n⏎ Appuyez sur Entrée pour continuer...")
         
         except KeyboardInterrupt:

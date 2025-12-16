@@ -26,10 +26,12 @@ from src.positioning import MAP_ZONES
 # These need to be calibrated based on the actual radar image
 MAP_BOUNDS = {
     'de_dust2': {
-        'x_min': -2551, 'x_max': 1880,
-        'y_min': -161, 'y_max': 3260,
-        'scale': 1024  # Radar image size
-    },
+    'x_min': -2551,
+    'x_max': 1880,
+    'y_min': -161,
+    'y_max': 3260,
+    'scale': 1024
+},
     'de_mirage': {
         'x_min': -3500, 'x_max': 2700,
         'y_min': -3200, 'y_max': 2800,
