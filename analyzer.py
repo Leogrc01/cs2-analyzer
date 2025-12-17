@@ -181,6 +181,7 @@ def run_modular_report(demo_path, player_name):
     print("  5. 💰 Analyse économique")
     print("  6. 🗺️  Positionnement")
     print("  7. 🎯 Priorités d'amélioration")
+    print("  8. 🎮 Estimation Elo/Rang")
     print("  0. Annuler")
     print("=" * 70)
     
@@ -191,7 +192,8 @@ def run_modular_report(demo_path, player_name):
         '4': 'utility',
         '5': 'economy',
         '6': 'positioning',
-        '7': 'priorities'
+        '7': 'priorities',
+        '8': 'elo'
     }
     
     choice = input("\n➤ Choisir une section: ").strip()

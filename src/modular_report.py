@@ -3,6 +3,8 @@ Modular Report Generator - Generate specific sections of analysis
 """
 from typing import Dict, Any, List
 from pathlib import Path
+from src.elo_estimator import EloEstimator
+from src.elo_report import EloReportGenerator
 
 
 class ModularReportGenerator:
@@ -39,7 +41,8 @@ class ModularReportGenerator:
             'utility': self._generate_utility,
             'economy': self._generate_economy,
             'positioning': self._generate_positioning,
-            'priorities': self._generate_priorities
+            'priorities': self._generate_priorities,
+            'elo': self._generate_elo
         }
         
         if section_name not in sections:
@@ -367,6 +370,34 @@ class ModularReportGenerator:
             lines.append("")
         
         lines.append("💡 TIP: Focus sur le point #1 pour impact maximal")
+        
+        return lines
+    
+    def _generate_elo(self) -> List[str]:
+        """Generate Elo estimation section"""
+        lines = []
+        lines.append("🎯 ESTIMATION DE RANG/ELO")
+        lines.append("-" * 70)
+        
+        try:
+            estimator = EloEstimator(self.analysis)
+            estimation = estimator.estimate_rank()
+            
+            # Use the full Elo report generator
+            elo_report_gen = EloReportGenerator(estimation, self.player_name)
+            full_report = elo_report_gen.generate_report()
+            
+            # Extract just the body (skip the header)
+            report_lines = full_report.split('\n')
+            # Skip first 4 lines (header) and last 4 lines (footer)
+            body_lines = report_lines[4:-4]
+            
+            lines.extend(body_lines)
+            
+        except Exception as e:
+            lines.append(f"⚠️  Impossible d'estimer le rang: {e}")
+            lines.append("")
+            lines.append("Vérifie que les données d'analyse sont complètes.")
         
         return lines
     

@@ -3,6 +3,8 @@ CS2 Gap Report Generator - Detailed actionable reports
 """
 from typing import Dict, Any, List
 from pathlib import Path
+from src.elo_estimator import EloEstimator
+from src.elo_report import EloReportGenerator
 
 
 class ReportGenerator:
@@ -59,6 +61,10 @@ class ReportGenerator:
         lines.append("")
         
         lines.extend(self._generate_positioning_details())
+        lines.append("")
+        
+        # Elo estimation
+        lines.extend(self._generate_elo_estimation())
         lines.append("")
         
         # Footer
@@ -292,6 +298,34 @@ class ReportGenerator:
             lines.append("Recommandations:")
             for rec in self.positioning_recommendations:
                 lines.append(f"  {rec}")
+        
+        return lines
+    
+    def _generate_elo_estimation(self) -> List[str]:
+        """Generate Elo/Rank estimation section"""
+        lines = []
+        lines.append("🎯 ESTIMATION DE RANG/ELO")
+        lines.append("-" * 70)
+        
+        try:
+            estimator = EloEstimator(self.analysis)
+            estimation = estimator.estimate_rank()
+            
+            # Quick summary
+            lines.append(f"Rang estimé: {estimation['label']}")
+            lines.append(f"Elo estimé: ~{estimation['estimated_elo']}")
+            lines.append(f"Confiance: {estimation['confidence']}")
+            
+            # Strengths/Weaknesses
+            if estimation['strengths']:
+                lines.append(f"\n💪 Forces: {', '.join(estimation['strengths'])}")
+            if estimation['weaknesses']:
+                lines.append(f"⚠️  Faiblesses: {', '.join(estimation['weaknesses'])}")
+            
+            lines.append("\n💡 Pour un rapport Elo complet, utilise le rapport modulaire 'priorities'")
+            
+        except Exception as e:
+            lines.append(f"⚠️  Impossible d'estimer le rang: {e}")
         
         return lines
     

@@ -17,7 +17,8 @@ AVAILABLE_SECTIONS = {
     'utility': '💥 Utilisation des utilitaires',
     'economy': '💰 Analyse économique',
     'positioning': '🗺️  Positionnement',
-    'priorities': '🎯 Priorités d\'amélioration'
+    'priorities': '🎯 Priorités d\'amélioration',
+    'elo': '🎮 Estimation Elo/Rang'
 }
 
 
